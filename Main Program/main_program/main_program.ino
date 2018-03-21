@@ -1,3 +1,10 @@
+#include <SoftwareSerial.h>
+
+#define MAX_SPEED 200
+#define MIN_SPEED 50
+#define INC_SPEED 20
+//Bluetooth
+SoftwareSerial BT(8, 9); 
 //DC Motor
 int fwdRightPin = 6;
 int bwdRightPin = 5;
@@ -9,10 +16,20 @@ int echo1Pin = 3;
 //IR Left&Right
 int irLeftPin = A7;
 int irRightPin = A6;
+//Obstacle
+int leftObstacle;
+int rightObstacle;
+int frontObstacle;
 
 long randNumber;
+char cmd;
+int speedRight = 0;
+int speedLeft = 0;
+int mode = 0;//0 : random, 1 : remote
 
 void setup() {
+  BT.begin(9600);
+  BT.println("Hi");
   pinMode(fwdRightPin, OUTPUT);
   pinMode(bwdRightPin, OUTPUT);
   pinMode(fwdLeftPin, OUTPUT);
@@ -26,10 +43,75 @@ void setup() {
 }
 
 void loop() {
-  int leftObstacle = irRead(irLeftPin);
-  int rightObstacle = irRead(irRightPin);
-  int frontObstacle = usRead(trig1Pin,echo1Pin);
+  leftObstacle = irRead(irLeftPin);
+  rightObstacle = irRead(irRightPin);
+  frontObstacle = usRead(trig1Pin,echo1Pin);
 
+  if (BT.available()){
+    cmd = (BT.read());
+    if (cmd == 'm'){
+      if(mode == 0){
+        mode = 1;
+      } else {
+        mode = 0;
+      }
+    }
+  }
+
+  if(mode == 0){
+    randomMode();
+  } else {
+    if(cmd == '1'){//left
+      speedLeft -= INC_SPEED;
+    } else if(cmd == '2'){//up
+      speedLeft += INC_SPEED;
+      speedRight += INC_SPEED;
+    } else if(cmd == '3'){//right
+      speedRight -= INC_SPEED;
+    } else if(cmd == '4'){//down
+      speedLeft -= INC_SPEED;
+      speedRight -= INC_SPEED;
+    } else if(cmd == 'e'){//stop
+      stopMoving();
+      speedLeft = 0;
+      speedRight = 0;
+    }
+    applySpeed();
+  }
+  
+}
+void applySpeed(){
+  if(speedLeft > MAX_SPEED){
+    digitalWrite(bwdLeftPin,LOW);
+    analogWrite(fwdLeftPin, MAX_SPEED);
+    speedLeft = MAX_SPEED;
+  } else if (speedLeft < (MAX_SPEED * -1)){
+    digitalWrite(fwdLeftPin,LOW);
+    analogWrite(bwdLeftPin, MAX_SPEED);
+  } else if(speedLeft >= 0){
+    digitalWrite(bwdLeftPin,LOW);
+    analogWrite(fwdLeftPin, speedLeft);
+  }else{
+    digitalWrite(fwdLeftPin,LOW);
+    analogWrite(bwdLeftPin, abs(speedLeft));
+  }
+  if(speedRight > MAX_SPEED){
+    digitalWrite(bwdRightPin,LOW);
+    analogWrite(fwdRightPin, MAX_SPEED);
+    speedRight = MAX_SPEED;
+  } else if (speedRight < (MAX_SPEED * -1)){
+    digitalWrite(fwdRightPin,LOW);
+    analogWrite(bwdRightPin, MAX_SPEED);
+  } else if(speedRight >= 0){
+    digitalWrite(bwdRightPin,LOW);
+    analogWrite(fwdRightPin, speedRight);
+  }else{
+    digitalWrite(fwdRightPin,LOW);
+    analogWrite(bwdRightPin, abs(speedRight));
+  }
+}
+
+void randomMode(){
   if (leftObstacle == 1){
     stopMoving();
     randNumber = random(300, 600);
