@@ -8,8 +8,8 @@ SoftwareSerial BT(8, 9);
 //DC Motor
 int fwdRightPin = 6;
 int bwdRightPin = 5;
-int fwdLeftPin = 11;
-int bwdLeftPin = 10;
+int fwdLeftPin = 10;
+int bwdLeftPin = 11;
 //US Front
 int trig1Pin = 2;
 int echo1Pin = 3;
@@ -46,7 +46,10 @@ void loop() {
   leftObstacle = irRead(irLeftPin);
   rightObstacle = irRead(irRightPin);
   frontObstacle = usRead(trig1Pin,echo1Pin);
-
+  if(mode == 0){
+    randomMode();
+  }
+    
   if (BT.available()){
     cmd = (BT.read());
     if (cmd == 'm'){
@@ -56,28 +59,29 @@ void loop() {
         mode = 0;
       }
     }
+    if(mode == 0){
+      randomMode();
+    } else {
+      if(cmd == '1'){//left
+        speedLeft -= INC_SPEED;
+      } else if(cmd == '2'){//up
+        speedLeft += INC_SPEED;
+        speedRight += INC_SPEED;
+      } else if(cmd == '3'){//right
+        speedRight -= INC_SPEED;
+      } else if(cmd == '4'){//down
+        speedLeft -= INC_SPEED;
+        speedRight -= INC_SPEED;
+      } else if(cmd == 'e'){//stop
+        stopMoving();
+        speedLeft = 0;
+        speedRight = 0;
+      }
+      applySpeed();
+    }
   }
 
-  if(mode == 0){
-    randomMode();
-  } else {
-    if(cmd == '1'){//left
-      speedLeft -= INC_SPEED;
-    } else if(cmd == '2'){//up
-      speedLeft += INC_SPEED;
-      speedRight += INC_SPEED;
-    } else if(cmd == '3'){//right
-      speedRight -= INC_SPEED;
-    } else if(cmd == '4'){//down
-      speedLeft -= INC_SPEED;
-      speedRight -= INC_SPEED;
-    } else if(cmd == 'e'){//stop
-      stopMoving();
-      speedLeft = 0;
-      speedRight = 0;
-    }
-    applySpeed();
-  }
+  
   
 }
 void applySpeed(){
@@ -172,8 +176,8 @@ int usRead(int trigPin, int echoPin){
   // Reads the echoPin, returns the sound wave travel time in microseconds
   long duration = pulseIn(echoPin, HIGH);
   // Calculating the distance
-  int distance= duration*0.034/2;
-  if (distance < 4){
+  int distance= duration*0.34/2;
+  if (distance < 20){
     return 1;
   } else {
     return 0;
@@ -202,10 +206,10 @@ void turnRight(int duration){
 
 void moveForward(){
   digitalWrite(bwdLeftPin,LOW);
-  analogWrite(fwdLeftPin, 150);
+  analogWrite(fwdLeftPin, 215);
   
   digitalWrite(bwdRightPin,LOW);
-  analogWrite(fwdRightPin, 150);
+  analogWrite(fwdRightPin, 255);
 }
 
 void moveBackward(int duration){
